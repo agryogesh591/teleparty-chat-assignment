@@ -3,20 +3,23 @@ import { getClient, SocketMessageTypes, IMessage, ITypingMessage } from './telep
 import { SocketEventHandler } from 'teleparty-websocket-lib';
 import Lobby from './components/Lobby';
 import ChatRoom from './components/ChatRoom';
-import './App.css'; // Assuming you have basic CSS
+import './App.css';
 
 const App: React.FC = () => {
   const [view, setView] = useState<'lobby' | 'chat'>('lobby');
   const [messages, setMessages] = useState<IMessage[]>([]);
-  const [isReady, setIsReady] = useState(false); // Check if socket is connected
+  const [isReady, setIsReady] = useState(false);
   const [roomId, setRoomId] = useState<string>('');
-  const [isSomeoneTyping, setIsSomeoneTyping] = useState(false);
   
-  // Ref to access the client without re-rendering issues
+  // Yahan change kiya hai: Boolean ki jagah String | null
+  const [typingDisplay, setTypingDisplay] = useState<string | null>(null);
+  
+  // Trick: Ye ID aur Nickname ka connection yaad rakhega
+  const userNamesRef = useRef<Record<string, string>>({});
+
   const clientRef = useRef<any>(null);
 
   useEffect(() => {
-    // 1. Define Event Listener
     const eventHandler: SocketEventHandler = {
       onConnectionReady: () => {
         console.log("Socket Connection Ready!");
@@ -30,35 +33,41 @@ const App: React.FC = () => {
       onMessage: (message: any) => {
         console.log("Received Message:", message);
 
-        // Handle Chat Messages
         if (message.type === SocketMessageTypes.SEND_MESSAGE) {
-          setMessages((prev) => [...prev, message.data]);
+          const msg = message.data;
+          
+          // MAPPING LOGIC: Agar message mein permId aur Nickname hai, toh save kar lo
+          if (msg.permId && msg.userNickname) {
+            userNamesRef.current[msg.permId] = msg.userNickname;
+          }
+          
+          setMessages((prev) => [...prev, msg]);
         }
         
-        // Handle Typing Presence
         if (message.type === SocketMessageTypes.SET_TYPING_PRESENCE) {
           const data = message.data as ITypingMessage;
-          setIsSomeoneTyping(data.anyoneTyping);
+          
+          if (data.anyoneTyping && data.usersTyping && data.usersTyping.length > 0) {
+            // Typing karne wale ki ID nikalo
+            const typerId = data.usersTyping[0];
+            // Check karo kya hum iska naam jante hain?
+            const name = userNamesRef.current[typerId] || "Someone"; 
+            setTypingDisplay(name);
+          } else {
+            setTypingDisplay(null);
+          }
         }
       }
     };
 
-    // 2. Initialize Client
     clientRef.current = getClient(eventHandler);
-
-    // Cleanup on unmount (optional)
-    return () => {
-       // logic to close connection if needed
-    };
   }, []);
 
   const handleCreateRoom = async (nickname: string) => {
     if (!clientRef.current || !isReady) return;
     try {
       const id = await clientRef.current.createChatRoom(nickname);
-      setRoomId(id); // PDF says create returns ID (check return type in console if unsure)
-      // Usually createChatRoom returns the ID directly or an object. 
-      // If it returns object, adjust to `id.roomId`
+      setRoomId(id);
       console.log("Room Created:", id); 
       setView('chat');
     } catch (err) {
@@ -69,13 +78,17 @@ const App: React.FC = () => {
   const handleJoinRoom = async (nickname: string, roomIdInput: string) => {
     if (!clientRef.current || !isReady) return;
     try {
-      // PDF says load previous messages on join
       const history = await clientRef.current.joinChatRoom(nickname, roomIdInput);
       console.log("Joined Room, History:", history);
       setRoomId(roomIdInput);
       
-      // If history has messages, load them
       if (history && history.messages) {
+        // History load karte waqt bhi users ko yaad kar lo
+        history.messages.forEach((msg: any) => {
+             if (msg.permId && msg.userNickname) {
+                 userNamesRef.current[msg.permId] = msg.userNickname;
+             }
+        });
         setMessages(history.messages);
       }
       
@@ -88,13 +101,11 @@ const App: React.FC = () => {
 
   const handleSendMessage = (text: string) => {
     if (!clientRef.current) return;
-    // PDF Requirement: { body: string }
     clientRef.current.sendMessage(SocketMessageTypes.SEND_MESSAGE, { body: text });
   };
 
   const handleTyping = (isTyping: boolean) => {
     if (!clientRef.current) return;
-    // PDF Requirement: { typing: boolean }
     clientRef.current.sendMessage(SocketMessageTypes.SET_TYPING_PRESENCE, { typing: isTyping });
   };
 
@@ -116,7 +127,7 @@ const App: React.FC = () => {
           roomId={roomId}
           onSendMessage={handleSendMessage}
           onTyping={handleTyping}
-          isSomeoneTyping={isSomeoneTyping}
+          typingUser={typingDisplay} // Ab ye sahi variable pass kar raha hai
         />
       )}
     </div>

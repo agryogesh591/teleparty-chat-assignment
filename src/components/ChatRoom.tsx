@@ -6,39 +6,45 @@ interface ChatRoomProps {
   roomId: string;
   onSendMessage: (text: string) => void;
   onTyping: (isTyping: boolean) => void;
-  isSomeoneTyping: boolean;
+  typingUser: string | null; // Corrected Type
 }
 
-const ChatRoom: React.FC<ChatRoomProps> = ({ messages, roomId, onSendMessage, onTyping, isSomeoneTyping }) => {
+const ChatRoom: React.FC<ChatRoomProps> = ({ 
+  messages, 
+  roomId, 
+  onSendMessage, 
+  onTyping, 
+  typingUser 
+}) => {
+
   const [input, setInput] = useState('');
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Auto-scroll to bottom logic
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll logic
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, typingUser]); // Scroll even when typing status appears
 
   const handleSend = () => {
-    if (input.trim()) {
-      onSendMessage(input);
-      setInput('');
-      // Stop typing status immediately after sending
-      onTyping(false);
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    }
+    if (!input.trim()) return;
+
+    onSendMessage(input);
+    setInput('');
+    onTyping(false);
+
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
 
-    // Logic to handle "User is typing..."
+    // Typing start
     onTyping(true);
-    
-    // Clear old timeout
+
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
 
-    // Set new timeout to stop typing after 1.5 seconds of inactivity
+    // Stop typing after 1.5 seconds of inactivity
     typingTimeoutRef.current = setTimeout(() => {
       onTyping(false);
     }, 1500);
@@ -46,50 +52,81 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ messages, roomId, onSendMessage, on
 
   return (
     <div className="chat-container" style={{ maxWidth: '600px', margin: '0 auto', padding: '10px' }}>
-      <div className="chat-header" style={{ borderBottom: '1px solid #ddd', marginBottom: '10px' }}>
-        <h2>Room ID: <span style={{ fontSize: '0.8em', color: '#555' }}>{roomId}</span></h2>
+      <div style={{ borderBottom: '1px solid #ddd', marginBottom: '10px', paddingBottom: '10px' }}>
+        <h2>Room ID: <span style={{ color: '#e50914' }}>{roomId}</span></h2>
       </div>
 
-      <div className="messages-list" style={{ 
-        height: '400px', 
-        overflowY: 'auto', 
-        border: '1px solid #eee', 
+      <div className="messages-list" style={{
+        height: '400px',
+        overflowY: 'auto',
+        border: '1px solid #eee',
         padding: '10px',
         backgroundColor: '#f9f9f9',
-        borderRadius: '5px'
+        borderRadius: '5px',
+        display: 'flex',
+        flexDirection: 'column'
       }}>
         {messages.map((msg, index) => (
-          <div key={index} style={{ 
-            marginBottom: '10px', 
-            textAlign: msg.isSystemMessage ? 'center' : 'left',
-            color: msg.isSystemMessage ? '#888' : '#000'
+          <div key={index} style={{
+            marginBottom: '10px',
+            alignSelf: msg.isSystemMessage ? 'center' : 'flex-start',
+            maxWidth: '80%'
           }}>
             {msg.isSystemMessage ? (
-              <small><em>{msg.body}</em></small>
+              <small style={{ color: '#888' }}><em>{msg.body}</em></small>
             ) : (
-              <div style={{ background: '#fff', padding: '8px', borderRadius: '8px', display: 'inline-block', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
-                <strong>{msg.userNickname}: </strong>
-                <span>{msg.body}</span>
+              <div style={{ 
+                background: '#fff',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.1)' 
+              }}>
+                <strong style={{ color: '#333', display: 'block', fontSize: '0.8rem' }}>{msg.userNickname}</strong>
+                <span style={{ fontSize: '1rem' }}>{msg.body}</span>
               </div>
             )}
           </div>
         ))}
-        {isSomeoneTyping && <div style={{fontStyle: 'italic', color: '#aaa', fontSize: '0.8rem'}}>Someone is typing...</div>}
+
+        {/* Typing Indicator */}
+        {typingUser && (
+          <div style={{ 
+            fontStyle: 'italic', 
+            color: '#888', 
+            fontSize: '0.85rem', 
+            marginTop: '5px',
+            paddingLeft: '5px' 
+          }}>
+             User <strong style={{color: '#000'}}>{typingUser}</strong> is typing...
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
       <div className="input-area" style={{ marginTop: '15px', display: 'flex' }}>
-        <input 
-          type="text" 
+        <input
+          type="text"
           value={input}
           onChange={handleInputChange}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           placeholder="Type a message..."
-          style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
+          style={{ flex: 1, padding: '12px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '1rem' }}
         />
-        <button 
+
+        <button
           onClick={handleSend}
-          style={{ marginLeft: '10px', padding: '10px 20px', background: '#e50914', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+          style={{
+            marginLeft: '10px',
+            padding: '10px 25px',
+            background: '#e50914',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '1rem',
+            fontWeight: 'bold'
+          }}
         >
           Send
         </button>
