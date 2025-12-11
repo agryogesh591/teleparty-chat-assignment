@@ -6,7 +6,7 @@ interface ChatRoomProps {
   roomId: string;
   onSendMessage: (text: string) => void;
   onTyping: (isTyping: boolean) => void;
-  typingUser: string | null; // Corrected Type
+  isSomeoneTyping: boolean; // Wapas boolean kar diya
 }
 
 const ChatRoom: React.FC<ChatRoomProps> = ({ 
@@ -14,37 +14,30 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
   roomId, 
   onSendMessage, 
   onTyping, 
-  typingUser 
+  isSomeoneTyping 
 }) => {
 
   const [input, setInput] = useState('');
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll logic
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, typingUser]); // Scroll even when typing status appears
+  }, [messages, isSomeoneTyping]);
 
   const handleSend = () => {
     if (!input.trim()) return;
-
     onSendMessage(input);
     setInput('');
     onTyping(false);
-
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
-
-    // Typing start
     onTyping(true);
-
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-
-    // Stop typing after 1.5 seconds of inactivity
+    
     typingTimeoutRef.current = setTimeout(() => {
       onTyping(false);
     }, 1500);
@@ -52,7 +45,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
 
   return (
     <div className="chat-container" style={{ maxWidth: '600px', margin: '0 auto', padding: '10px' }}>
-      <div style={{ borderBottom: '1px solid #ddd', marginBottom: '10px', paddingBottom: '10px' }}>
+      <div style={{ borderBottom: '1px solid #ddd', marginBottom: '10px' }}>
         <h2>Room ID: <span style={{ color: '#e50914' }}>{roomId}</span></h2>
       </div>
 
@@ -81,23 +74,23 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
                 borderRadius: '8px',
                 boxShadow: '0 1px 2px rgba(0,0,0,0.1)' 
               }}>
-                <strong style={{ color: '#333', display: 'block', fontSize: '0.8rem' }}>{msg.userNickname}</strong>
-                <span style={{ fontSize: '1rem' }}>{msg.body}</span>
+                <strong style={{ display: 'block', fontSize: '0.8rem', color: '#333' }}>{msg.userNickname}</strong>
+                <span>{msg.body}</span>
               </div>
             )}
           </div>
         ))}
 
-        {/* Typing Indicator */}
-        {typingUser && (
+        {/* Stable "Someone is typing..." indicator */}
+        {isSomeoneTyping && (
           <div style={{ 
             fontStyle: 'italic', 
             color: '#888', 
-            fontSize: '0.85rem', 
+            fontSize: '0.85rem',
             marginTop: '5px',
-            paddingLeft: '5px' 
+            paddingLeft: '5px'
           }}>
-             User <strong style={{color: '#000'}}>{typingUser}</strong> is typing...
+            Someone is typing...
           </div>
         )}
 
@@ -111,9 +104,8 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
           onChange={handleInputChange}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           placeholder="Type a message..."
-          style={{ flex: 1, padding: '12px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '1rem' }}
+          style={{ flex: 1, padding: '12px', border: '1px solid #ccc', borderRadius: '4px' }}
         />
-
         <button
           onClick={handleSend}
           style={{
@@ -124,7 +116,6 @@ const ChatRoom: React.FC<ChatRoomProps> = ({
             border: 'none',
             borderRadius: '4px',
             cursor: 'pointer',
-            fontSize: '1rem',
             fontWeight: 'bold'
           }}
         >

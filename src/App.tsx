@@ -11,12 +11,9 @@ const App: React.FC = () => {
   const [isReady, setIsReady] = useState(false);
   const [roomId, setRoomId] = useState<string>('');
   
-  // Yahan change kiya hai: Boolean ki jagah String | null
-  const [typingDisplay, setTypingDisplay] = useState<string | null>(null);
+  // Wapas simple boolean kar diya
+  const [isSomeoneTyping, setIsSomeoneTyping] = useState(false);
   
-  // Trick: Ye ID aur Nickname ka connection yaad rakhega
-  const userNamesRef = useRef<Record<string, string>>({});
-
   const clientRef = useRef<any>(null);
 
   useEffect(() => {
@@ -26,36 +23,20 @@ const App: React.FC = () => {
         setIsReady(true);
       },
       onClose: () => {
-        console.log("Socket Closed. Please reload.");
+        console.log("Socket Closed.");
         setIsReady(false);
-        alert("Connection lost. Please reload the page.");
+        alert("Connection lost. Please reload.");
       },
       onMessage: (message: any) => {
-        console.log("Received Message:", message);
-
+        // Handle Messages
         if (message.type === SocketMessageTypes.SEND_MESSAGE) {
-          const msg = message.data;
-          
-          // MAPPING LOGIC: Agar message mein permId aur Nickname hai, toh save kar lo
-          if (msg.permId && msg.userNickname) {
-            userNamesRef.current[msg.permId] = msg.userNickname;
-          }
-          
-          setMessages((prev) => [...prev, msg]);
+          setMessages((prev) => [...prev, message.data]);
         }
         
+        // Handle Typing (Simple Logic)
         if (message.type === SocketMessageTypes.SET_TYPING_PRESENCE) {
           const data = message.data as ITypingMessage;
-          
-          if (data.anyoneTyping && data.usersTyping && data.usersTyping.length > 0) {
-            // Typing karne wale ki ID nikalo
-            const typerId = data.usersTyping[0];
-            // Check karo kya hum iska naam jante hain?
-            const name = userNamesRef.current[typerId] || "Someone"; 
-            setTypingDisplay(name);
-          } else {
-            setTypingDisplay(null);
-          }
+          setIsSomeoneTyping(data.anyoneTyping);
         }
       }
     };
@@ -68,35 +49,20 @@ const App: React.FC = () => {
     try {
       const id = await clientRef.current.createChatRoom(nickname);
       setRoomId(id);
-      console.log("Room Created:", id); 
       setView('chat');
-    } catch (err) {
-      console.error("Failed to create room", err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   const handleJoinRoom = async (nickname: string, roomIdInput: string) => {
     if (!clientRef.current || !isReady) return;
     try {
       const history = await clientRef.current.joinChatRoom(nickname, roomIdInput);
-      console.log("Joined Room, History:", history);
       setRoomId(roomIdInput);
-      
       if (history && history.messages) {
-        // History load karte waqt bhi users ko yaad kar lo
-        history.messages.forEach((msg: any) => {
-             if (msg.permId && msg.userNickname) {
-                 userNamesRef.current[msg.permId] = msg.userNickname;
-             }
-        });
         setMessages(history.messages);
       }
-      
       setView('chat');
-    } catch (err) {
-      console.error("Failed to join room", err);
-      alert("Could not join room. Check ID.");
-    }
+    } catch (err) { alert("Error joining room"); }
   };
 
   const handleSendMessage = (text: string) => {
@@ -111,14 +77,10 @@ const App: React.FC = () => {
 
   return (
     <div className="app-container">
-      {!isReady && <div className="loading-bar">Connecting to Teleparty Server...</div>}
+      {!isReady && <div className="loading-bar">Connecting...</div>}
       
       {view === 'lobby' && (
-        <Lobby 
-          isReady={isReady} 
-          onCreate={handleCreateRoom} 
-          onJoin={handleJoinRoom} 
-        />
+        <Lobby isReady={isReady} onCreate={handleCreateRoom} onJoin={handleJoinRoom} />
       )}
 
       {view === 'chat' && (
@@ -127,7 +89,7 @@ const App: React.FC = () => {
           roomId={roomId}
           onSendMessage={handleSendMessage}
           onTyping={handleTyping}
-          typingUser={typingDisplay} // Ab ye sahi variable pass kar raha hai
+          isSomeoneTyping={isSomeoneTyping} // Simple boolean pass kar rahe hain
         />
       )}
     </div>
