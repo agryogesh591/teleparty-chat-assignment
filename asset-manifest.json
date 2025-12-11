@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/teleparty-chat-assignment/static/css/main.e24ea3bf.css",
-    "main.js": "/teleparty-chat-assignment/static/js/main.f0615c3d.js",
+    "main.css": "/teleparty-chat-assignment/static/css/main.de6e4b8d.css",
+    "main.js": "/teleparty-chat-assignment/static/js/main.714809ae.js",
     "static/js/453.2d49dbc5.chunk.js": "/teleparty-chat-assignment/static/js/453.2d49dbc5.chunk.js",
     "index.html": "/teleparty-chat-assignment/index.html",
-    "main.e24ea3bf.css.map": "/teleparty-chat-assignment/static/css/main.e24ea3bf.css.map",
-    "main.f0615c3d.js.map": "/teleparty-chat-assignment/static/js/main.f0615c3d.js.map",
+    "main.de6e4b8d.css.map": "/teleparty-chat-assignment/static/css/main.de6e4b8d.css.map",
+    "main.714809ae.js.map": "/teleparty-chat-assignment/static/js/main.714809ae.js.map",
     "453.2d49dbc5.chunk.js.map": "/teleparty-chat-assignment/static/js/453.2d49dbc5.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.e24ea3bf.css",
-    "static/js/main.f0615c3d.js"
+    "static/css/main.de6e4b8d.css",
+    "static/js/main.714809ae.js"
   ]
 }
