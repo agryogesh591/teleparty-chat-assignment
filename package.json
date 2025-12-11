@@ -16,6 +16,7 @@
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-scripts": "5.0.1",
+    "teleparty-websocket-lib": "github:watchparty-org/teleparty-websocket-lib",
     "typescript": "^4.9.5",
     "web-vitals": "^2.1.4"
   },

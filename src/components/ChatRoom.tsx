@@ -1,194 +1,95 @@
-import React, { useEffect, useRef, useState } from "react";
-import { onMessage, sendMessage, sendTyping } from "../teleparty/telepartyClient";
+import React, { useState, useEffect, useRef } from 'react';
+import { IMessage } from '../teleparty/telepartyClient';
 
 interface ChatRoomProps {
+  messages: IMessage[];
   roomId: string;
-  nickname: string;
+  onSendMessage: (text: string) => void;
+  onTyping: (isTyping: boolean) => void;
+  isSomeoneTyping: boolean;
 }
 
-let listeners: any[] = [];
+const ChatRoom: React.FC<ChatRoomProps> = ({ messages, roomId, onSendMessage, onTyping, isSomeoneTyping }) => {
+  const [input, setInput] = useState('');
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-const ChatRoom: React.FC<ChatRoomProps> = ({ roomId, nickname }) => {
-  const [messages, setMessages] = useState<{ user: string; body: string }[]>([]);
-  const [typing, setTyping] = useState(false);
-  const [typingUser, setTypingUser] = useState<string | null>(null); // NEW
-  const [input, setInput] = useState("");
-
-  const chatRef = useRef<HTMLDivElement>(null);
-  const processed = useRef<Set<string>>(new Set()); // prevent duplicates
-
-  // Auto-scroll to bottom
+  // Auto-scroll to bottom logic
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (chatRef.current) {
-      chatRef.current.scrollTop = chatRef.current.scrollHeight;
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Listener for receiving messages
-  useEffect(() => {
-    const handler = (msg: any) => {
-      // ------------- RECEIVE MESSAGE -------------
-      if (msg.type === "SEND_MESSAGE") {
-        if (processed.current.has(msg.data.id)) return;
-        processed.current.add(msg.data.id);
-
-        setMessages((prev) => [...prev, msg.data]);
-        setTyping(false);
-        setTypingUser(null);
-      }
-
-      // ------------- TYPING INDICATOR -------------
-      if (msg.type === "TYPING") {
-        if (msg.data.user !== nickname) {
-          if (msg.data.typing) {
-            setTyping(true);
-            setTypingUser(msg.data.user); // show user name
-          } else {
-            setTyping(false);
-            setTypingUser(null);
-          }
-        }
-      }
-    };
-
-    listeners.push(handler);
-    onMessage(handler);
-
-    // cleanup
-    return () => {
-      listeners = listeners.filter((fn) => fn !== handler);
-    };
-  }, [nickname]);
-
-  // Send message
   const handleSend = () => {
-    if (!input.trim()) return;
+    if (input.trim()) {
+      onSendMessage(input);
+      setInput('');
+      // Stop typing status immediately after sending
+      onTyping(false);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    }
+  };
 
-    sendMessage(nickname, input);
-    sendTyping(nickname, false);
-    setInput("");
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
+
+    // Logic to handle "User is typing..."
+    onTyping(true);
+    
+    // Clear old timeout
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+
+    // Set new timeout to stop typing after 1.5 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      onTyping(false);
+    }, 1500);
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh",
-        background: "#f5f5f5",
-      }}
-    >
-      <div
-        style={{
-          width: "330px",
-          background: "white",
-          padding: "30px",
-          borderRadius: "12px",
-          boxShadow: "0px 0px 20px rgba(0,0,0,0.1)",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <h3 style={{ textAlign: "center", marginBottom: "15px" }}>
-          Room: {roomId}
-        </h3>
+    <div className="chat-container" style={{ maxWidth: '600px', margin: '0 auto', padding: '10px' }}>
+      <div className="chat-header" style={{ borderBottom: '1px solid #ddd', marginBottom: '10px' }}>
+        <h2>Room ID: <span style={{ fontSize: '0.8em', color: '#555' }}>{roomId}</span></h2>
+      </div>
 
-        {/* MESSAGE BOX */}
-        <div
-          ref={chatRef}
-          style={{
-            border: "1px solid #ccc",
-            height: "220px",
-            overflowY: "auto",
-            padding: "10px",
-            marginBottom: "10px",
-            borderRadius: "6px",
-            fontSize: "14px",
-          }}
-        >
-          {messages.map((m, i) => {
-            const isSelf = m.user === nickname;
-            return (
-              <div
-                key={i}
-                style={{
-                  textAlign: isSelf ? "right" : "left",
-                  marginBottom: "10px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "inline-block",
-                    background: isSelf ? "#007bff" : "#eee",
-                    color: isSelf ? "white" : "black",
-                    padding: "6px 10px",
-                    borderRadius: "8px",
-                    maxWidth: "85%",
-                    wordBreak: "break-word",
-                  }}
-                >
-                  <strong>{m.user}: </strong> {m.body}
-                  <div
-                    style={{
-                      fontSize: "10px",
-                      marginTop: "4px",
-                      opacity: 0.8,
-                      textAlign: isSelf ? "right" : "left",
-                    }}
-                  >
-                    {new Date().toLocaleTimeString()}
-                  </div>
-                </div>
+      <div className="messages-list" style={{ 
+        height: '400px', 
+        overflowY: 'auto', 
+        border: '1px solid #eee', 
+        padding: '10px',
+        backgroundColor: '#f9f9f9',
+        borderRadius: '5px'
+      }}>
+        {messages.map((msg, index) => (
+          <div key={index} style={{ 
+            marginBottom: '10px', 
+            textAlign: msg.isSystemMessage ? 'center' : 'left',
+            color: msg.isSystemMessage ? '#888' : '#000'
+          }}>
+            {msg.isSystemMessage ? (
+              <small><em>{msg.body}</em></small>
+            ) : (
+              <div style={{ background: '#fff', padding: '8px', borderRadius: '8px', display: 'inline-block', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
+                <strong>{msg.userNickname}: </strong>
+                <span>{msg.body}</span>
               </div>
-            );
-          })}
-        </div>
-
-        {/* TYPING INDICATOR */}
-        {typing && typingUser && (
-          <div
-            style={{
-              fontStyle: "italic",
-              color: "gray",
-              marginBottom: "8px",
-              fontSize: "13px",
-            }}
-          >
-            {typingUser} is typing...
+            )}
           </div>
-        )}
+        ))}
+        {isSomeoneTyping && <div style={{fontStyle: 'italic', color: '#aaa', fontSize: '0.8rem'}}>Someone is typing...</div>}
+        <div ref={messagesEndRef} />
+      </div>
 
-        {/* INPUT AREA */}
-        <input
+      <div className="input-area" style={{ marginTop: '15px', display: 'flex' }}>
+        <input 
+          type="text" 
           value={input}
+          onChange={handleInputChange}
+          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           placeholder="Type a message..."
-          onChange={(e) => {
-            setInput(e.target.value);
-            sendTyping(nickname, true);
-          }}
-          onBlur={() => sendTyping(nickname, false)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          style={{
-            padding: "10px",
-            marginBottom: "10px",
-            borderRadius: "6px",
-            border: "1px solid #ccc",
-            fontSize: "14px",
-          }}
+          style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
         />
-
-        <button
+        <button 
           onClick={handleSend}
-          style={{
-            padding: "10px",
-            background: "#007bff",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontSize: "14px",
-          }}
+          style={{ marginLeft: '10px', padding: '10px 20px', background: '#e50914', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
         >
           Send
         </button>

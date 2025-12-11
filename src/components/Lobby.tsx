@@ -1,119 +1,65 @@
-import React, { useState } from "react";
-import { createRoom, joinRoom } from "../teleparty/telepartyClient";
+import React, { useState } from 'react';
 
 interface LobbyProps {
-  onJoin: (roomId: string, nickname: string) => void;
+  isReady: boolean;
+  onCreate: (nickname: string) => void;
+  onJoin: (nickname: string, roomId: string) => void;
 }
 
-const Lobby: React.FC<LobbyProps> = ({ onJoin }) => {
-  const [nickname, setNickname] = useState("");
-  const [roomId, setRoomId] = useState("");
-
-  const handleCreate = async () => {
-    if (!nickname.trim()) return;
-
-    const room = await createRoom(nickname);
-    onJoin(room.id, nickname);
-  };
-
-  const handleJoin = async () => {
-    if (!nickname.trim() || !roomId.trim()) return;
-
-    await joinRoom(roomId, nickname);
-    onJoin(roomId, nickname);
-  };
+const Lobby: React.FC<LobbyProps> = ({ isReady, onCreate, onJoin }) => {
+  const [nickname, setNickname] = useState('');
+  const [joinId, setJoinId] = useState('');
 
   return (
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      height: "100vh",
-      background: "#f5f5f5"
-    }}
-  >
-    <div
-      style={{
-        width: "330px",   // ⬅️ reduced width
-        background: "white",
-        padding: "30px",   // ⬅️ slightly smaller padding
-        borderRadius: "12px",
-        boxShadow: "0px 0px 20px rgba(0,0,0,0.1)"
-      }}
-    >
-      <h2 style={{ textAlign: "center", marginBottom: "20px", fontSize: "22px" }}>
-        Teleparty Lobby
-      </h2>
+    <div className="lobby-container" style={{ padding: '20px', textAlign: 'center' }}>
+      <h1>Teleparty Chat Challenge</h1>
+      
+      <div style={{ margin: '20px 0' }}>
+        <input 
+          type="text" 
+          placeholder="Enter your nickname" 
+          value={nickname}
+          onChange={(e) => setNickname(e.target.value)}
+          style={{ padding: '10px', width: '250px' }}
+        />
+      </div>
 
-      {/* Nickname */}
-      <input
-        placeholder="Enter nickname"
-        value={nickname}
-        onChange={(e) => setNickname(e.target.value)}
-        style={{
-          width: "100%",
-          padding: "10px",
-          marginBottom: "12px",
-          borderRadius: "6px",
-          border: "1px solid #ccc",
-          fontSize: "14px"
-        }}
-      />
+      <div className="actions" style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
+        {/* Create Room Section */}
+        <div style={{ border: '1px solid #ccc', padding: '20px' }}>
+          <h3>Create a New Room</h3>
+          <button 
+            disabled={!isReady || !nickname} 
+            onClick={() => onCreate(nickname)}
+            style={{ padding: '10px 20px', cursor: 'pointer' }}
+          >
+            Create Room
+          </button>
+        </div>
 
-      <button
-        onClick={handleCreate}
-        style={{
-          width: "100%",
-          padding: "10px",
-          background: "#007bff",
-          color: "white",
-          border: "none",
-          borderRadius: "6px",
-          marginBottom: "18px",
-          cursor: "pointer",
-          fontSize: "14px"
-        }}
-      >
-        Create Room
-      </button>
-
-      <hr style={{ marginBottom: "18px" }} />
-
-      {/* ROOM ID INPUT */}
-      <input
-        placeholder="Enter Room ID"
-        value={roomId}
-        onChange={(e) => setRoomId(e.target.value)}
-        style={{
-          width: "100%",
-          padding: "10px",
-          marginBottom: "12px",
-          borderRadius: "6px",
-          border: "1px solid #ccc",
-          fontSize: "14px"
-        }}
-      />
-
-      <button
-        onClick={handleJoin}
-        style={{
-          width: "100%",
-          padding: "10px",
-          background: "#007bff",
-          color: "white",
-          border: "none",
-          borderRadius: "6px",
-          cursor: "pointer",
-          fontSize: "14px"
-        }}
-      >
-        Join Room
-      </button>
+        {/* Join Room Section */}
+        <div style={{ border: '1px solid #ccc', padding: '20px' }}>
+          <h3>Join Existing Room</h3>
+          <input 
+            type="text" 
+            placeholder="Room ID" 
+            value={joinId}
+            onChange={(e) => setJoinId(e.target.value)}
+            style={{ display: 'block', margin: '10px auto', padding: '5px' }}
+          />
+          <button 
+            disabled={!isReady || !nickname || !joinId} 
+            onClick={() => onJoin(nickname, joinId)}
+            style={{ padding: '10px 20px', cursor: 'pointer' }}
+          >
+            Join Room
+          </button>
+        </div>
+      </div>
+      
+      {!isReady && <p style={{color: 'red'}}>Waiting for connection...</p>}
     </div>
-  </div>
-);
-
+  );
 };
 
 export default Lobby;

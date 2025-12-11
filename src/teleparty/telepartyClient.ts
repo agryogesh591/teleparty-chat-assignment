@@ -1,83 +1,36 @@
-// telepartyClient.ts
+import { TelepartyClient, SocketEventHandler, SocketMessageTypes } from 'teleparty-websocket-lib';
 
-type Listener = (msg: any) => void;
-let listeners: Listener[] = [];
+// Interfaces based on the PDF Documentation
+export interface IMessage {
+  isSystemMessage: boolean;
+  userIcon?: string;
+  userNickname?: string;
+  body: string;
+  permId?: string;
+  timestamp?: number;
+}
 
-let currentRoomId: string | null = null;
-let currentUser: string | null = null;
+export interface ITypingMessage {
+  anyoneTyping: boolean;
+  usersTyping: string[]; // array of permIds
+}
 
-// ---------------- BROADCAST ----------------
-const broadcast = (msg: any) => {
-  localStorage.setItem(
-    "tp-event",
-    JSON.stringify({ msg, ts: Date.now() }) // ensures event always fires
-  );
-};
+// Global instance variable (so we don't recreate it)
+let clientInstance: TelepartyClient | null = null;
 
-// ---------------- RECEIVE -------------------
-window.addEventListener("storage", (e) => {
-  if (e.key === "tp-event" && e.newValue) {
-    const { msg } = JSON.parse(e.newValue);
-
-    // Ignore events from other rooms
-    if (msg.data?.roomId && msg.data.roomId !== currentRoomId) return;
-
-    listeners.forEach((fn) => fn(msg));
+export const getClient = (eventHandler: SocketEventHandler): TelepartyClient => {
+  if (!clientInstance) {
+    clientInstance = new TelepartyClient(eventHandler);
   }
-});
-
-// ---------------- READY ---------------------
-export const onReady = (cb: () => void) => {
-  console.log("Mock WebSocket ready");
-  cb();
+  return clientInstance;
 };
 
-// ---------------- CREATE ROOM -----------------
-export const createRoom = async (nickname: string) => {
-  const id = "room-" + Math.floor(Math.random() * 50000);
-  currentRoomId = id;
-  currentUser = nickname;
-
-  return { id };
+// Helper to destroy client if needed (optional)
+export const destroyClient = () => {
+  if (clientInstance) {
+    // clientInstance.teardown(); // If library has a teardown method
+    clientInstance = null;
+  }
 };
 
-// ---------------- JOIN ROOM -------------------
-export const joinRoom = async (roomId: string, nickname: string) => {
-  currentRoomId = roomId;
-  currentUser = nickname;
-};
-
-// ---------------- SEND MESSAGE ----------------
-// NOW WITH UNIQUE ID TO PREVENT DUPLICATES
-export const sendMessage = (user: string, body: string) => {
-  const id = Date.now() + "-" + Math.random(); // unique ID
-
-  const localMsg = {
-    type: "SEND_MESSAGE",
-    data: { user, body, roomId: currentRoomId, self: true, id },
-  };
-
-  const remoteMsg = {
-    type: "SEND_MESSAGE",
-    data: { user, body, roomId: currentRoomId, self: false, id },
-  };
-
-  // Local echo
-  listeners.forEach((fn) => fn(localMsg));
-
-  // Send to others
-  broadcast(remoteMsg);
-};
-
-// ---------------- TYPING INDICATOR ------------
-export const sendTyping = (user: string, typing: boolean) => {
-  broadcast({
-    type: "TYPING",
-    data: { user, typing, roomId: currentRoomId },
-  });
-};
-
-// ---------------- REGISTER LISTENER -----------
-export const onMessage = (cb: Listener) => {
-  listeners.push(cb);
-};
+export { SocketMessageTypes };
