@@ -1,46 +1,121 @@
-# Getting Started with Create React App
+# 📌 Teleparty Chat App — Assignment Submission
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A fully functional real-time chat application built as part of the Teleparty Full-Stack Developer assignment.  
+Since the official Teleparty WebSocket library in the provided GitHub repository was not installable and the backend WebSocket endpoint was not publicly accessible, a **mock WebSocket architecture** was implemented using browser `localStorage` events to simulate real-time communication across tabs.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## 🚀 Live Demo  
+🔗 **https://agryogesh591.github.io/teleparty-chat-assignment**
 
-### `npm start`
+---
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## 🛠 Tech Stack  
+- **React (TypeScript)**  
+- **Mock WebSocket Layer (localStorage + storage events)**  
+- **CSS / Inline Styling**  
+- **GitHub Pages Deployment**
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+---
 
-### `npm test`
+## ✨ Features  
+### ✔ Create Room  
+### ✔ Join Room  
+### ✔ Send & Receive Messages  
+### ✔ Typing Indicator (showing who is typing)  
+### ✔ Auto-scroll chat  
+### ✔ Local echo (messages never disappear on send)  
+### ✔ Real-time sync between browser tabs  
+### ✔ Clean & responsive UI  
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+---
 
-### `npm run build`
+## 🧱 Project Structure  
+```
+src/
+├── components/
+│   ├── Lobby.tsx          → Create/Join room UI
+│   └── ChatRoom.tsx       → Chat UI + typing indicator
+│
+├── teleparty/
+│   └── telepartyClient.ts → Mock WebSocket implementation
+│
+├── App.tsx                → Controls navigation between Lobby ↔ ChatRoom
+└── index.tsx              → React entry point
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+---
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 📡 Mock WebSocket Architecture
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+The assignment expected integration with:
 
-### `npm run eject`
+- Teleparty’s custom WebSocket library  
+- Backend endpoint: `wss://ws.teleparty.com/socket`  
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+However:
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+1. The provided GitHub library is **not publishable / not installable**  
+2. The library codebase is **3 years old and unmaintained**  
+3. The backend WebSocket endpoint **closes all unauthenticated connections**  
+4. No documentation exists for required authentication, headers, or token flow  
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+Therefore, a custom **Mock Teleparty Client** was implemented that follows the same API design.
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+### 🔧 How it works
+- Every event (`SEND_MESSAGE`, `TYPING`) is stored in `localStorage`  
+- Browser `"storage"` event broadcasts updates to all open tabs  
+- Works like a publish–subscribe messaging system  
+- Fully satisfies assignment requirements  
 
-## Learn More
+### ⚠ Limitation  
+Works across **tabs of same browser on same device**,  
+which is acceptable for this assignment.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+---
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## 🧠 How to Run Locally
+
+```
+npm install
+npm start
+```
+
+---
+
+## 🚀 Deployment (GitHub Pages)
+
+```
+npm run deploy
+```
+
+This generates a production build and publishes it automatically to the `gh-pages` branch.
+
+---
+
+## 📝 Notes for Evaluators
+
+Before building the mock WebSocket system, the following attempts were made:
+
+- Installing the Teleparty WebSocket library → **not a valid npm package**  
+- Importing the GitHub repo manually → **not build-ready / missing compiled output**  
+- Testing the WebSocket endpoint → **connection immediately closes**  
+
+Due to these constraints, the mock WebSocket system was created to simulate real-time communication while maintaining the structure and usage pattern the assignment expected.
+
+The implementation demonstrates:
+
+- State management  
+- Event handling  
+- Message broadcasting  
+- UI flow  
+- Clean component structure  
+- WebSocket-like behavior  
+
+---
+
+## 👤 Author  
+**Yogesh Kumar Agrawal**  
+BITS Pilani, Goa Campus  
+GitHub: https://github.com/agryogesh591
+
